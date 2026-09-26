@@ -1,0 +1,39 @@
+name: Build GAROU Audio
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract source ZIP
+        run: |
+          mkdir source
+          unzip -o *.zip -d source
+
+      - name: Setup NDK
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r25c
+          add-to-path: true
+
+      - name: Find and build
+        run: |
+          MK=$(find "$GITHUB_WORKSPACE/source" -name Android.mk | head -1)
+          DIR=$(dirname "$MK")
+          ndk-build \
+            NDK_PROJECT_PATH="$DIR/.." \
+            APP_BUILD_SCRIPT="$MK" \
+            NDK_APPLICATION_MK="$(dirname "$MK")/Application.mk" \
+            -j2
+
+      - name: Upload SO
+        uses: actions/upload-artifact@v4
+        with:
+          name: libgarou_audio
+          path: |
+            source/**/libgarou_audio.so
